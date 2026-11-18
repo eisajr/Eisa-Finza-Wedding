@@ -131,6 +131,11 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .mono span{grid-area:1/1}
 .mono span:first-child{color:var(--gold);transform:translate(-.07em,-.02em);position:relative;z-index:2}
 .mono span:last-child{color:#c49e52;transform:translate(.06em,.07em)}
+.sound{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:50;width:46px;height:46px;border-radius:50%;border:1px solid var(--gold);background:rgba(252,248,239,.92);display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 16px rgba(120,90,30,.18);padding:0}
+body.open .sound:not([hidden]){display:flex}
+.sound svg{width:22px;height:22px;fill:var(--gold);stroke:var(--gold);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.sound .w{fill:none}.sound .x{fill:none;display:none}
+.sound.off .w{display:none}.sound.off .x{display:inline}
 </style>
 <noscript><style>#invite{display:block}body.locked{overflow:auto;height:auto}.rv,.sd.l,.sd.r,.line{opacity:1!important;transform:none!important}#openBtn{display:none}</style></noscript>
 </head>
@@ -199,6 +204,11 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <p style="margin:4px 0 0">24 December 2026 · Padne, Kerala</p>
   </footer>
 </main>
+<audio id="bgm" src="music.mp3" loop preload="none"></audio>
+<button id="sound" class="sound off" type="button" aria-label="Play music" hidden>
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z"/><path class="w" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="x" d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+</button>
+
 
 <script>
 var RSVP_TEXT = "Assalamu alaikum! I’d love to attend Eisa & Finza’s Nikah on 24 December 2026. ";
@@ -215,11 +225,26 @@ function watch(){
   });
 }
 
+var bgm=document.getElementById("bgm"), sndBtn=document.getElementById("sound"), wantMusic=false;
+function setSnd(on){ wantMusic=on; sndBtn.classList.toggle("off",!on); sndBtn.setAttribute("aria-label", on?"Mute music":"Play music"); }
+function startMusic(){
+  try{ bgm.volume=0; }catch(e){}
+  var p=bgm.play();
+  var ok=function(){ sndBtn.hidden=false; setSnd(true); var v=0,t=setInterval(function(){ v=Math.min(.55,v+.03); try{bgm.volume=v}catch(e){} if(v>=.55) clearInterval(t); },120); };
+  if(p&&p.then){ p.then(ok).catch(function(){ if(!bgm.error){ sndBtn.hidden=false; setSnd(false); } }); } else ok();
+}
+sndBtn.addEventListener("click",function(){
+  if(bgm.paused){ bgm.play().then(function(){ setSnd(true); }).catch(function(){}); } else { bgm.pause(); setSnd(false); }
+});
+bgm.addEventListener("error",function(){ sndBtn.hidden=true; });
+document.addEventListener("visibilitychange",function(){ if(document.hidden){ bgm.pause(); } else if(wantMusic){ bgm.play().catch(function(){}); } });
+
 // open invitation
 document.getElementById("openBtn").addEventListener("click", function(){
   document.body.classList.add("open");
   document.body.classList.remove("locked");
   watch();
+  startMusic();
   document.getElementById("families").scrollIntoView({behavior:"smooth"});
 });
 
